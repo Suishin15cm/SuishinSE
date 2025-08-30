@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>物販受付ページ</title>
+  <style>
+
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      background: #f2f2f2;
+    }
+
+    #dual-section {
+      display: flex;
+      gap: 0.5em;
+      width: 95vw;
+      height: 100vh;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #scan-section,
+    #result-section {
+      height: 95vh;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    #scan-section{
+      flex: 3.5;
+    }
+
+    #result-section{
+      flex: 6.5;
+    }
+
+    .section {
+      margin: 1.5em 0;
+      padding: 1em;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-link {
+      display: inline-block;
+      background-color: #bdd4e6;
+      color: #333;
+      padding: 0.6em 1.2em;
+      border-radius: 6px;
+      font-size: 0.95em;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+
+    .btn-link:hover {
+      background-color: #aac7df;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-link:active {
+      background-color: #95bad8;
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-link:focus {
+       outline: 2px solid #88b0d1;
+      outline-offset: 2px;
+    }
+
+    button {
+      background-color: #bdd4e6; 
+      color: #333;
+      border: none;
+      padding: 0.6em 1.2em;
+      border-radius: 6px;
+      margin: 0.3em 0.3em 0.3em 0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background-color: #aac7df;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      background-color: #95bad8;
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    button:focus {
+      outline: 2px solid #88b0d1;
+      outline-offset: 2px;
+    }
+
+    #scan-input-wrapper{
+      margin-top: 0.5em;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #scan-input{
+      width: 90%;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 0.5em;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.4em;
+      text-align: center;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f0f0f0;
+      color: #000;
+    }
+    
+    tfoot tr th {
+      font-weight: bold;
+    }
+
+    .select-option{
+      padding: 0.4em;
+      font-size: 0.95em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      width: 4em;
+    }
+
+    .summary{
+      margin-top: 1rem; 
+      font-weight: bold; 
+      font-size: 1.2rem;
+    }
+
+    .input {
+      padding: 0.6em 1em;
+      font-size: 0.95em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+  </style>
+</head>
+<body>
+
+  <a href="purchases.html" target="_blank" class="btn-link">購入データ一覧🔗</a>
+  <a href="inventory.html" target="_blank" class="btn-link">在庫管理ページ🔗</a>
+
+  <div id="dual-section">
+    <div id="scan-section" class="section">
+      <div id="inventory-info"></div>
+      <button id="toggle-scan-btn" onclick="clickToggleScanBtn()">スキャン開始</button>
+      <button id="toggle-input-btn" onclick="clickToggleInputBtn()">入力値表示</button>
+      <div id="scan-input-wrapper">
+        <input id="scan-input" class="input" readonly="true" onkeydown="keydownScanInput(event)">
+      </div> 
+    </div>
+    <div id="result-section" class="section">
+      <div id="scan-result"></div>
+    </div>
+  </div>
+
+  <script>
+    const PURCHASES_KEY = "purchases";
+    const INVENTORY_KEY = "inventory";
+    let lastScannedData = null;
+
+    // 商品情報（マスタ）
+    const GOODS_MASTER = [
+      { id: 1,  name: "あいうえおかきくけこさしすせそたちつてと", price:0, bonus:3 },
+      { id: 2,  name: "あいうえおかきくけこさしすせそ", price:2500, bonus:2 },
+      { id: 3,  name: "あいうえおかきくけこ", price:1500,  bonus:1 },
+      { id: 4,  name: "あいうえお", price:1000,  bonus:1 },
+      { id: 5,  name: "缶バッジA", price:400,  bonus:0 },
+      { id: 6,  name: "缶バッジB", price:400,  bonus:0 },
+      { id: 7,  name: "缶バッジC", price:400,  bonus:0 },
+      { id: 8,  name: "缶バッジD", price:400,  bonus:0 },
+      { id: 9,  name: "缶バッジE", price:400,  bonus:0 },
+      { id:10, name: "商品10", price:400,  bonus:0 },
+      { id:11, name: "商品11", price:800, bonus:1 },
+      { id:12, name: "商品12", price:2200, bonus:3 },
+      { id:13, name: "商品13", price:2200, bonus:3 },
+      { id:14, name: "商品14", price:3500, bonus:5 },
+      { id:15, name: "商品15", price:300,  bonus:0 },
+      { id:16, name: "商品16", price:400,  bonus:0 }
+    ];
+
+    // 初期在庫数
+    const INIT_STOCK = [
+      { id: 1, stock: 50 }, 
+      { id: 2, stock: 30 }, 
+      { id: 3, stock: 100 },
+      { id: 4, stock: 80 }, 
+      { id: 5, stock: 50 }, 
+      { id: 6, stock: 50 },
+      { id: 7, stock: 50 }, 
+      { id: 8, stock: 50 }, 
+      { id: 9, stock: 50 },
+      { id: 10, stock: 50 }, 
+      { id: 11, stock: 25 }, 
+      { id: 12, stock: 35 },
+      { id: 13, stock: 45 }, 
+      { id: 14, stock: 65 }, 
+      { id: 15, stock: 75 },
+      { id: 16, stock: 85 }
+    ];
+
+    // 購入点数ごとに応援カードを付与する商品
+    const BONUS_ITEM_IDS = [
+      5,6,7,8,9
+    ]
+
+    ///
+    /// 画面ロード時処理
+    ///
+    window.onload = function() {
+      if (!localStorage.getItem(INVENTORY_KEY)) {
+        localStorage.setItem(INVENTORY_KEY, JSON.stringify(INIT_STOCK));
+      }
+      setInventoryInfo();
+    }
+
+    ///
+    /// 在庫情報表示
+    ///
+    function setInventoryInfo(){
+      const inventoryInfo = document.getElementById("inventory-info");
+
+      const inventory = getInventory();
+      const lowStockItems = inventory
+        .filter(item => item.stock <= 10)
+        .map(item => {
+          const m = GOODS_MASTER.find(g => g.id === item.id);
+          const name = m ? m.name : "不明な商品";
+          return `<li>${name}　残り ${item.stock} 個</li>`;
+        });
+
+      if (lowStockItems.length > 0) {
+        inventoryInfo.innerHTML = `
+          <p>【在庫情報】</p>
+          <p>在庫数が10個以下の商品が <strong>${lowStockItems.length}個</strong> あります。</p>
+          <ul>${lowStockItems.join("")}</ul>
+        `;
+      } else {
+        inventoryInfo.innerHTML = `
+          <p>【在庫情報】</p>
+          <p>現在、在庫数が10個以下の商品はありません。</p>
+        `;
+      }
+    }
+
+    ///
+    /// スキャン開始/停止ボタン押下
+    ///
+    function clickToggleScanBtn() {
+      const button = document.getElementById("toggle-scan-btn");
+      const input = document.getElementById("scan-input");
+
+      //停止処理
+      if (!input.readOnly){
+        input.readOnly = true;
+        button.textContent = "スキャン開始";
+        return;
+      }
+
+      // 開始処理
+      if (lastScannedData) {
+        if (confirm("保存されていない購入データがあります。保存しますか？")){
+          clickSaveBtn()
+        } else {
+          document.getElementById("scan-result").textContent = "";
+          lastScannedData = null;
+        }
+      }
+      input.readOnly = false;
+      input.focus();
+      button.textContent = "スキャン停止";
+    }
+
+    ///
+    /// 入力値表示/非表示ボタン押下
+    ///
+    function clickToggleInputBtn() {
+      const button = document.getElementById("toggle-input-btn");
+      const inputWrapper = document.getElementById("scan-input-wrapper");
+      const currentOpacity = window.getComputedStyle(inputWrapper).opacity;
+      if (currentOpacity === "0") {
+        inputWrapper.style.opacity = "1";
+        button.textContent = "入力値非表示"
+      } else {
+        inputWrapper.style.opacity = "0";
+        button.textContent = "入力値表示"
+      }
+    }
+
+    ///
+    /// スキャンデータ読み取り
+    ///
+    function keydownScanInput(event){
+
+      // Enter以外は処理を行わない
+      if (event.key !== "Enter") return;
+
+      const button = document.getElementById("toggle-scan-btn");
+      const input = document.getElementById("scan-input");
+
+      // JSON文字列からデータを取得
+      try{
+        const parsed = JSON.parse(input.value);
+              const items = (Array.isArray(parsed) ? parsed : []).map(item => {
+                const m = GOODS_MASTER.find(g => g.id === item.id) || {};
+                return { 
+                  id: item.id, 
+                  qty: item.qty, 
+                  name: m.name || "不明", 
+                  price: m.price || 0, 
+                  bonus: m.bonus || 0 
+                };
+              });
+              const data = {
+                items: items
+              };
+              lastScannedData = data;
+              displayScanResult(data);
+      } catch(e) {
+        alert("読み取ったデータが無効です。再度スキャンしてください。");
+      }
+
+      input.value = "";
+      input.readOnly = true;
+      setTimeout(() => {
+        button.textContent = "スキャン開始";
+        button.focus();
+      }, 100); 
+
+    }
+
+    ///
+    /// スキャン結果表示
+    ///
+    function displayScanResult(data) {
+      let initTotalQty = 0;
+      let initTotalPrice = 0;
+      let initTotalBonus = 0;
+      const inventory = getInventory();
+      const warningLines = [];
+
+      const rows = data.items.map((item, index) => {
+        const inv = inventory.find(i => i.id === item.id);
+        const available = inv ? inv.stock : 0;
+        const selectedValue = item.qty <= available ? item.qty : available;
+
+        if (item.qty > available) {
+          warningLines.push(`「${item.name}」の在庫が不足しています。【希望数：${item.qty}個　残数：${available}個】`);
+        }
+
+        data.items[index].qty = selectedValue;
+        const amount = item.price * selectedValue;
+        const bonusAmount = item.bonus * selectedValue;
+        initTotalQty += selectedValue;
+        initTotalPrice += amount;
+        initTotalBonus += bonusAmount;
+
+        const selectOptions = Array.from({ length: available + 1 }, (_, i) =>
+          `<option value="${i}" ${i === selectedValue ? "selected" : ""}>${i}</option>`
+        ).join("");
+
+        return `
+          <tr>
+            <td>${item.name}</td>
+            <td>￥${item.price}</td>
+            <td>
+              <select data-index="${index}" class="select-option">${selectOptions}</select>
+            </td>
+            <td>${bonusAmount}枚</td>
+            <td>￥${amount}</td>
+          </tr>`;
+      }).join("");
+
+      // 不足している商品がある場合、メッセージを表示
+      const warningHTML = warningLines.length > 0
+        ? `<p style="color: red; font-weight: bold;">${warningLines.join("<br>")}</p>`
+        : "";
+
+      // セット対象商品5個購入ごとに応援カードを1枚追加
+      const countForBonus = data.items
+        .filter(item => BONUS_ITEM_IDS.includes(item.id))
+        .reduce((sum, item) => sum + item.qty, 0);
+      const initSetBonus = Math.floor(countForBonus / 5);
+      const initFinalBonus = initTotalBonus + initSetBonus
+
+      // スキャン結果画面表示（初期値）
+      document.getElementById("scan-result").innerHTML = `
+        ${warningHTML}
+        <table>
+          <thead><tr><th>商品名</th><th>単価</th><th>数量</th><th>応援カード小計</th><th>金額小計</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <th colspan="2">合計</th>
+              <th id="total-qty">${initTotalQty}点</th>
+              <th id="total-bonus">${initTotalBonus}枚</th>
+              <th id="total-price">￥${initTotalPrice}</th>
+            </tr>
+          </tfoot>
+        </table>
+        <table>
+          <tfoot>
+            <tr>
+              <th>缶バッジ購入点数</th>
+              <td id="count-for-bonus">${countForBonus}点</td>
+              <th>追加応援カード枚数</th>
+              <td id="set-bonus">${initSetBonus}枚</td>
+            </tr>
+          </tfoot>
+        </table>
+        <p class="summary">
+          金額合計　　¥ <span id="display-total-price">${initTotalPrice}</span><br>
+          応援カード　<span id="display-final-bonus">${initFinalBonus}</span> 枚
+        </p>
+        預かり金額　<input type="number" id="payment-input" class="input"/>
+        <p id="change-result" class="summary"/></p>
+        <button onclick="clickSaveBtn()">保存</button>
+        <button onclick="clickCancellBtn()">キャンセル</button>
+      `;
+
+      // 保存用データに情報を追加
+      data.totalQty = initTotalQty
+      data.totalPrice = initTotalPrice;
+      data.totalBonus = initTotalBonus;
+      data.setBonus = initSetBonus;
+      data.finalBonus = initFinalBonus;
+
+      // 数量選択変更時
+      const qtySelects = document.querySelectorAll('select[data-index]');
+      qtySelects.forEach(select => {
+        select.addEventListener("change", () => {
+          const idx = parseInt(select.dataset.index);
+          const newQty = parseInt(select.value) || 0;
+
+          data.items[idx].qty = newQty;
+          const item = data.items[idx];
+
+          // 行内再計算
+          const row = select.closest("tr");
+          const tdBonus = row.children[3];
+          const tdAmount = row.children[4];
+
+          const newAmount = item.price * item.qty;
+          const newBonus = item.bonus * item.qty;
+
+          tdBonus.textContent = `${newBonus}枚`;
+          tdAmount.textContent = `￥${newAmount}`;
+
+          // 合計再計算
+          let newTotalQty = 0;
+          let newTotalPrice = 0;
+          let newTotalBonus = 0;
+
+          data.items.forEach(item => {
+            newTotalQty += item.qty
+            newTotalPrice += item.price * item.qty;
+            newTotalBonus += item.bonus * item.qty;
+          });
+
+          const countForBonus = data.items
+            .filter(item => BONUS_ITEM_IDS.includes(item.id))
+            .reduce((sum, item) => sum + item.qty, 0);
+          const newSetBonus = Math.floor(countForBonus / 5);
+          const newFinalBonus = newTotalBonus + newSetBonus
+
+          data.totalQty = newTotalQty;
+          data.totalPrice = newTotalPrice;
+          data.totalBonus = newTotalBonus;
+          data.setBonus = newSetBonus;
+          data.finalBonus = newFinalBonus;
+
+          document.getElementById("total-qty").textContent = `${newTotalQty}点`;
+          document.getElementById("total-price").textContent = `￥${newTotalPrice}`;
+          document.getElementById("total-bonus").textContent = `${newTotalBonus}枚`;
+          document.getElementById("count-for-bonus").textContent = `${countForBonus}点`;
+          document.getElementById("set-bonus").textContent = `${newSetBonus}枚`;
+          document.getElementById("display-total-price").textContent = newTotalPrice;
+          document.getElementById("display-final-bonus").textContent = newFinalBonus;
+
+          // お釣り再計算
+          const paymentInput = document.getElementById("payment-input");
+          const changeResult = document.getElementById("change-result");
+          const totalPrice = data.totalPrice
+          const payment = parseInt(paymentInput.value, 10);
+          if (!isNaN(payment)) {
+            const change = payment - totalPrice;
+            changeResult.textContent = `お釣り　${change >= 0 ? "￥" + change : "不足しています"}`;
+          }
+        });
+      });
+
+      // 支払い入力欄監視
+      const paymentInput = document.getElementById("payment-input");
+      const changeResult = document.getElementById("change-result");
+      paymentInput.addEventListener("input", () => {
+        const payment = parseInt(paymentInput.value, 10);
+        if (isNaN(payment)) {
+          changeResult.textContent = "";
+        } else {
+          const totalPrice = data.totalPrice
+          const change = payment - totalPrice;
+          changeResult.textContent = `お釣り　${change >= 0 ? "￥" + change : "不足しています"}`;
+        }
+      });
+    }
+
+    ///
+    /// 保存ボタン押下時
+    ///
+    function clickSaveBtn() {
+      if (!lastScannedData) return alert("保存するデータがありません。");
+
+      if (!isStockSufficient(lastScannedData.items)) {
+        return alert("在庫が不足している商品があります。");
+      }
+
+      // 在庫データ更新
+      reduceInventory(lastScannedData.items);
+      
+      // 購入データ更新
+      const arr = JSON.parse(localStorage.getItem(PURCHASES_KEY) || "[]");
+      arr.push(lastScannedData);
+      localStorage.setItem(PURCHASES_KEY, JSON.stringify(arr));
+      
+      alert("保存しました。");
+
+      // 画面を簡易的に初期化する
+      document.getElementById("scan-result").textContent = "";
+      lastScannedData = null;
+      setInventoryInfo()
+    }
+
+    ///
+    /// キャンセルボタン押下時
+    ///
+    function clickCancellBtn(){
+      if (confirm("購入データを消去します。よろしいですか？")){
+        // 画面を簡易的に初期化する
+        document.getElementById("scan-result").textContent = "";
+        lastScannedData = null;
+      }
+    }
+
+    ///
+    /// 在庫情報の取得
+    ///
+    function getInventory() {
+      return  JSON.parse(localStorage.getItem(INVENTORY_KEY) || "[]");
+    }
+
+    ///
+    /// 在庫確認
+    ///
+    function isStockSufficient(items) {
+      const inventory = getInventory();
+      for (const item of items) {
+        const invItem = inventory.find(i => i.id === item.id);
+        if (!invItem || invItem.stock < item.qty) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    ///
+    /// 在庫減算
+    ///
+    function reduceInventory(items) {
+      const inventory = getInventory();
+      items.forEach(item => {
+        const invItem = inventory.find(i => i.id === item.id);
+        if (invItem) {
+          invItem.stock = Math.max(0, invItem.stock - item.qty);
+        }
+      });
+      localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
+    }
+
+</script>
+</body>
+</html>
