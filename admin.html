@@ -7,13 +7,13 @@
 
     body {
       font-family: sans-serif;
-      padding: 1em;
+      padding: 1rem;
       background: #f2f2f2;
     }
 
     #dual-section {
       display: flex;
-      gap: 0.5em;
+      gap: 0.5rem;
       width: 95vw;
       height: 100vh;
       margin-left: auto;
@@ -36,8 +36,8 @@
     }
 
     .section {
-      margin: 1.5em 0;
-      padding: 1em;
+      margin: 1.5rem 0;
+      padding: 1rem;
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -48,9 +48,9 @@
       display: inline-block;
       background-color: #bdd4e6;
       color: #333;
-      padding: 0.6em 1.2em;
+      padding: 0.6rem 1.2rem;
       border-radius: 6px;
-      font-size: 0.95em;
+      font-size: 0.95rem;
       font-weight: bold;
       text-decoration: none;
       cursor: pointer;
@@ -71,7 +71,7 @@
     }
 
     .btn-link:focus {
-       outline: 2px solid #88b0d1;
+      outline: 2px solid #88b0d1;
       outline-offset: 2px;
     }
 
@@ -79,11 +79,11 @@
       background-color: #bdd4e6; 
       color: #333;
       border: none;
-      padding: 0.6em 1.2em;
+      padding: 0.6rem 1.2rem;
       border-radius: 6px;
-      margin: 0.3em 0.3em 0.3em 0;
+      margin: 0.3rem 0.3rem 0.3rem 0;
       cursor: pointer;
-      font-size: 0.95em;
+      font-size: 0.95rem;
       font-weight: bold;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
@@ -106,46 +106,82 @@
       outline-offset: 2px;
     }
 
-    #scan-input-wrapper{
-      margin-top: 0.5em;
+    li {
+      font-size: 0.9rem;
+    }
+
+    #scan-input-wrapper {
+      margin-top: 0.5rem;
       opacity: 0;
       transition: opacity 0.3s;
     }
 
-    #scan-input{
+    #scan-input {
       width: 90%;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 0.5em;
+      margin-top: 0.5rem;
+      table-layout: fixed;
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 0.4em;
+      padding: 0.4rem;
       text-align: center;
       font-size: 0.85rem;
-      white-space: nowrap;
+      white-space: break-word;
     }
 
     th {
       background: #f0f0f0;
-      color: #000;
     }
-    
-    tfoot tr th {
-      font-weight: bold;
+
+    .list-table th:nth-child(1), td:nth-child(1) {
+      width: 40%;
+    }
+
+    .list-table th:nth-child(2), td:nth-child(2) {
+      width: 10%;
+    }
+
+    .list-table th:nth-child(3), td:nth-child(3) {
+      width: 10%;
+    }
+
+    .list-table th:nth-child(4), td:nth-child(4) {
+      width: 20%;
+    }
+
+    .list-table th:nth-child(5), td:nth-child(5) {
+      width: 20%;
+    }
+
+    .set-bonus-table th:nth-child(1), td:nth-child(1) {
+      width: 35%;
+    }
+
+    .set-bonus-table th:nth-child(2), td:nth-child(2) {
+      width: 15%;
+    }
+
+    .set-bonus-table th:nth-child(3), td:nth-child(3) {
+      width: 35%;
+    }
+
+    .set-bonus-table th:nth-child(4), td:nth-child(4) {
+      width: 15%;
     }
 
     .select-option{
-      padding: 0.4em;
-      font-size: 0.95em;
+      padding: 0.4rem;
+      font-size: 0.95rem;
       border-radius: 6px;
       border: 1px solid #ccc;
       box-sizing: border-box;
-      width: 4em;
+      width: 4rem;
     }
 
     .summary{
@@ -155,8 +191,8 @@
     }
 
     .input {
-      padding: 0.6em 1em;
-      font-size: 0.95em;
+      padding: 0.6rem 1rem;
+      font-size: 0.95rem;
       border-radius: 6px;
       border: 1px solid #ccc;
       box-sizing: border-box;
@@ -166,7 +202,7 @@
 </head>
 <body>
 
-  <a href="purchases.html" target="_blank" class="btn-link">購入データ一覧🔗</a>
+  <a href="sales.html" target="_blank" class="btn-link">販売データ一覧🔗</a>
   <a href="inventory.html" target="_blank" class="btn-link">在庫管理ページ🔗</a>
 
   <div id="dual-section">
@@ -184,7 +220,7 @@
   </div>
 
   <script>
-    const PURCHASES_KEY = "purchases";
+    const SALES_KEY = "sales";
     const INVENTORY_KEY = "inventory";
     let lastScannedData = null;
 
@@ -415,7 +451,7 @@
       // スキャン結果画面表示（初期値）
       document.getElementById("scan-result").innerHTML = `
         ${warningHTML}
-        <table>
+        <table class="list-table">
           <thead><tr><th>商品名</th><th>単価</th><th>数量</th><th>応援カード小計</th><th>金額小計</th></tr></thead>
           <tbody>${rows}</tbody>
           <tfoot>
@@ -427,12 +463,12 @@
             </tr>
           </tfoot>
         </table>
-        <table>
+        <table class="set-bonus-table">
           <tfoot>
             <tr>
               <th>缶バッジ購入点数</th>
               <td id="count-for-bonus">${countForBonus}点</td>
-              <th>追加応援カード枚数</th>
+              <th>缶バッジ付属応援カード枚数</th>
               <td id="set-bonus">${initSetBonus}枚</td>
             </tr>
           </tfoot>
@@ -546,10 +582,10 @@
       // 在庫データ更新
       reduceInventory(lastScannedData.items);
       
-      // 購入データ更新
-      const arr = JSON.parse(localStorage.getItem(PURCHASES_KEY) || "[]");
+      // 販売データ更新
+      const arr = JSON.parse(localStorage.getItem(SALES_KEY) || "[]");
       arr.push(lastScannedData);
-      localStorage.setItem(PURCHASES_KEY, JSON.stringify(arr));
+      localStorage.setItem(SALES_KEY, JSON.stringify(arr));
       
       alert("保存しました。");
 

@@ -4,85 +4,90 @@
   <meta charset="UTF-8" />
   <title>在庫管理ページ</title>
   <style>
+    
     body {
       font-family: sans-serif;
-      padding: 1em;
-      background: #f0f0f0;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1em;
+      padding: 1rem;
+      background: #f2f2f2;
     }
 
     .section {
-      margin: 1.5em 0;
-      padding: 1em;
+      margin: 1.5rem 0;
+      padding: 1rem;
       background: #e0e0e0;
       border: 1px solid #ddd;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
 
+    #inventory-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
     .card {
       background: white;
       border-radius: 8px;
-      padding: 1em;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 0.8rem;
       display: flex;
       flex-direction: column;
       transition: background-color 0.3s ease;
     }
 
     .card.modified {
-      background-color: #fff8dc; /* 薄い黄色 */
+      background-color: #fff8dc;
     }
 
     .card h2 {
       font-size: 1rem;
-      margin-top: auto;
-      margin-bottom: 0.5em;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
       color: #444;
+      flex-grow: 1;
     }
 
     .card select {
       width: 100%;
-      padding: 0.4em;
-      font-size: 0.95em;
-      margin-top: 0.3em;
+      padding: 0.4rem;
+      font-size: 0.95rem;
+      margin-top: 0.3rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
     .btn-link {
-      background-color: #bdd4e6; 
+      background-color: #bdd4e6;
       color: #333;
+      padding: 0.6rem 1.2rem;
       border: none;
-      padding: 0.6em 1.2em;
       border-radius: 6px;
-      margin: 0.3em 0.3em 0.3em 0;
-      cursor: pointer;
-      font-size: 0.95em;
+      font-size: 0.95rem;
       font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
     }
 
     .btn-link:hover {
-      background-color: #aac7df;  /* hover時 */
+      background-color: #aac7df;
       box-shadow: 0 4px 6px rgba(0,0,0,0.15);
       transform: translateY(-1px);
     }
 
     .btn-link:active {
-      background-color: #95bad8;  /* active時 */
+      background-color: #95bad8;
       transform: translateY(1px);
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .btn-link:focus {
-       outline: 2px solid #88b0d1;
+      outline: 2px solid #88b0d1;
       outline-offset: 2px;
     }
+
   </style>
 </head>
 <body>
@@ -95,11 +100,13 @@
   <a href="admin.html" target="_blank" class="btn-link">物販受付ページに戻る</a>
 
   <div class="section">
-  <div class="grid" id="inventory-list"></div>
+    <div class="grid" id="inventory-list"></div>
   </div>
 
   <script>
     const INVENTORY_KEY = "inventory";
+
+    // 商品マスタ
     const GOODS_MASTER = [
       { id: 1,  name: "あいうえおかきくけこさしすせそたちつてと" },
       { id: 2,  name: "あいうえおかきくけこさしすせそ" },
@@ -119,26 +126,31 @@
       { id:16, name: "商品16" }
     ];
 
+    // 画面ロード時、在庫数表示処理を呼び出す
+    window.onload = displayInventory();
+
+    ///
+    /// 在庫数取得
+    ///
     function getInventory() {
       return JSON.parse(localStorage.getItem(INVENTORY_KEY) || "[]");
     }
 
-    function saveInventory(data) {
-      localStorage.setItem(INVENTORY_KEY, JSON.stringify(data));
-    }
-
-    function renderCards() {
+    ///
+    /// 在庫数表示
+    ///
+    function displayInventory() {
       const inventory = getInventory();
-      const listEl = document.getElementById("inventory-list");
-      listEl.innerHTML = GOODS_MASTER.map(g => {
+      const list = document.getElementById("inventory-list");
+
+      list.innerHTML = GOODS_MASTER.map(g => {
         const inv = inventory.find(i => i.id === g.id);
         const stock = inv ? inv.stock : 0;
 
         // 選択肢生成（0〜100）
-        let options = "";
-        for (let i = 0; i <= 100; i++) {
-          options += `<option value="${i}" ${i === stock ? "selected" : ""}>${i}</option>`;
-        }
+        const options = Array.from({ length: 101 }, (_, i) =>
+          `<option value="${i}" ${i === stock ? "selected" : ""}>${i}</option>`
+        ).join("");
 
         return `
           <div class="card" id="card-${g.id}">
@@ -146,23 +158,31 @@
             <select id="stock-select-${g.id}" onchange="markModified(${g.id})">
               ${options}
             </select>
-          </div>
-        `;
+          </div>`;
       }).join("");
     }
 
+    ///
+    /// 在庫数変更時
+    ///
     function markModified(id) {
       const card = document.getElementById(`card-${id}`);
       card.classList.add("modified");
     }
 
+    ///
+    /// 「在庫を更新する」押下
+    ///
     function saveAll() {
+
+      // 在庫数取得
       const newInventory = GOODS_MASTER.map(g => {
         const select = document.getElementById(`stock-select-${g.id}`);
         return { id: g.id, stock: parseInt(select.value, 10) };
       });
 
-      saveInventory(newInventory);
+      // 在庫数保存
+      localStorage.setItem(INVENTORY_KEY, JSON.stringify(newInventory));
 
       // 色リセット
       GOODS_MASTER.forEach(g => {
@@ -173,15 +193,17 @@
       alert("在庫を更新しました");
     }
 
+    ///
+    /// 「在庫データをクリア」押下
+    ///
     function clearInventory(){
-    if (confirm("すべての在庫データを削除します。よろしいですか？")) {
-      localStorage.removeItem(INVENTORY_KEY);
-      alert("在庫データを削除しました。");
-      renderCards();
-    }
+      if (confirm("すべての在庫データを削除します。よろしいですか？")) {
+        localStorage.removeItem(INVENTORY_KEY);
+        alert("在庫データを削除しました。");
+        displayInventory();
+      }
     }
 
-    renderCards();
   </script>
 </body>
 </html>
